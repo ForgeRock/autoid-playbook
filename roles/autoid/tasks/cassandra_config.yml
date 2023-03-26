@@ -1,0 +1,234 @@
+---
+
+- name: get myip
+  become_user: "{{ autoid_user }}"
+  shell: "echo $(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1)"
+  register: command_output
+
+- set_fact:
+    myip: "{{ command_output.stdout }}"
+
+
+- name: copy cassandra_update.sh
+  become: yes
+  copy:
+    src: cassandra_update.sh
+    dest: "{{ home_dir }}/cassandra"
+    mode: '0755'
+
+- name: Update cassandra_update.sh with keypass
+  become: yes
+  replace:
+    path: '{{ home_dir }}/cassandra/cassandra_update.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#keypass#'
+
+- name: Run cassandra_update.sh
+  become: yes
+  shell:
+    ./cassandra_update.sh
+  args:
+    chdir: "{{ home_dir }}/cassandra"
+  ignore_errors: true
+
+- name: Creates cqlshrc directory
+  become: yes
+  file:
+    path: "{{ usr_dir }}/.cassandra"
+    state: directory
+
+- name: Change .cassandra file ownership, group and permissions
+  ansible.builtin.file:
+    path: "{{ usr_dir }}/.cassandra"
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+    mode: '0775'
+
+
+- name: check cassandra cert file
+  become: yes
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/cassandra/certs"
+  register: check_file
+
+- name: Change certs ownership, group and permissions
+  ansible.builtin.file:
+    path: '{{ home_dir }}/cassandra/certs'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+    mode: '0775'
+  when: check_file.stat.exists
+
+- name: copy cqlshrc files
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: cqlshrc
+    dest: "{{ usr_dir }}/.cassandra"
+    mode: '0600'
+
+- name: Change cassandra.yml permission
+  ansible.builtin.file:
+    path: "/etc/cassandra/conf/cassandra.yaml"
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+    mode: '0600'
+
+- name: Update cqlshrc with ip
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: "{{ usr_dir }}/.cassandra/cqlshrc"
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: Update cqlshrc with password
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: "{{ usr_dir }}/.cassandra/cqlshrc"
+    regexp: "{{ item }}"
+    replace: "{{ passwd }}"
+  with_items:
+  - '#pass#'
+
+
+- name: Update cqlshrc with home dir
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: "{{ usr_dir }}/.cassandra/cqlshrc"
+    regexp: "{{ item }}"
+    replace: "{{ home_dir }}"
+  with_items:
+  - '#home#'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-cer.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-key.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-cer.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-key.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-keystore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-truststore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-keystore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-truststore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: make cassandra certs under /etc/cassandra
+  become: yes
+  shell:
+    mkdir -p /etc/cassandra/conf/certs
+
+- name: copy cassnadra certs
+  become: yes
+  shell: |
+    cp "{{ home_dir }}"/cassandra/certs/*.* /etc/cassandra/conf/certs/
+
+- name: Change cassandra.yml permission
+  ansible.builtin.file:
+    path: "{{ home_dir }}/cassandra/certs"
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Change cassandra.yml permission
+  ansible.builtin.file:
+    path: "/etc/cassandra/conf/certs"
+    owner: cassandra
+    group: cassandra
+
+- name: startup cassandra
+  become: yes
+  shell: |
+    service cassandra restart
+
+- name: Change cassandra_user_setup.sh permission
+  ansible.builtin.file:
+    path: "{{ home_dir }}/cassandra/cassandra_user_setup.sh"
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Run cassandra_user_setup.sh
+  become_user: "{{ autoid_user }}"
+  shell:
+    ./cassandra_user_setup.sh
+  args:
+    chdir: "{{ home_dir }}/cassandra"
+  ignore_errors: true
+
+- name: update cassandra.yml
+  become: yes
+  shell: |
+    sed -i 's/authorizer: AllowAllAuthorizer/authorizer: CassandraAuthorizer/g' /etc/cassandra/conf/cassandra.yaml
+
+- name: chmod for
+  become: yes
+  shell: |
+    chmod 440 /etc/cassandra/conf/cassandra.yaml
+    chmod 440 "{{ usr_dir }}"/.cassandra/cqlshrc
+
+
+- name:  copy yaml for cassandra
+  become: yes
+  shell: |
+    cp /etc/cassandra/default.conf/cassandra.yaml /etc/cassandra/conf/cassandra.yaml.save 
+    cp /etc/cassandra/conf/cassandra.yaml /etc/cassandra/default.conf/cassandra.yaml
+    chown cassandra:cassandra /etc/cassandra/default.conf/cassandra.yaml
+
+- name: copy showcase file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: showcase_data.zip
+    dest: "{{ home_dir }}"
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: startup cassandra
+  become: yes
+  shell: |
+    service cassandra restart
+

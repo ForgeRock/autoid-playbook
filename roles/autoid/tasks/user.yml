@@ -1,0 +1,78 @@
+---
+
+- name: Create user autoid
+  user:
+    name: "{{ autoid_user }}"
+    shell: /bin/bash
+    generate_ssh_key: yes
+    groups: wheel
+    append: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+    state: present
+  become: yes
+  
+- name: check sudoer file
+  ansible.builtin.stat:
+    path: "/etc/sudoers.d/{{ autoid_user }}"
+  register: check_file
+
+- name: Create sudoer file
+  shell:
+    touch "/etc/sudoers.d/{{ autoid_user }}"
+  become: yes
+  when: not check_file.stat.exists
+
+- name: Edit sudoer file
+  lineinfile:
+    path: "/etc/sudoers.d/{{ autoid_user }}"
+    line: '#user     ALL=(ALL)  NOPASSWD:ALL'
+    state: present
+  become: yes
+  when: not check_file.stat.exists
+
+- name: Update sudoer
+  become: yes
+  replace:
+    path: "/etc/sudoers.d/{{ autoid_user }}"
+    regexp: "{{ item }}"
+    replace: "{{ autoid_user }}"
+  with_items:
+  - '#user'
+  when: not check_file.stat.exists
+
+
+- name: Create install directory
+  file:
+    path: "{{ install_dir }}"
+    state: directory
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+    mode: 0775
+    recurse: yes
+  become: yes
+  
+- name: copy ssh key to deployer dir
+  shell:
+    cp "{{ usr_dir }}"/.ssh/id_rsa "{{ install_dir }}"
+  become: yes
+
+- name: chown of id_rsa  key
+  shell:
+    chown "{{ autoid_user }}":"{{ autoid_group }}" "{{ install_dir }}"/id_rsa
+  become: yes
+  
+- name: Create authorized key
+  shell:
+    cp "{{ usr_dir }}"/.ssh/id_rsa.pub "{{ usr_dir }}"/.ssh/authorized_keys
+  become: yes
+  
+- name: chown of authorized key
+  shell:
+    chown "{{ autoid_user }}":"{{ autoid_group }}" "{{ usr_dir }}"/.ssh/authorized_keys
+  become: yes
+
+- name: Change file permission
+  shell:
+    chmod 700 "{{ usr_dir }}"/.ssh && chmod 600 "{{ usr_dir }}"/.ssh/authorized_keys
+  become: yes

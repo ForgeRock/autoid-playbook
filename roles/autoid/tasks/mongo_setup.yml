@@ -1,0 +1,104 @@
+---
+
+- name: copy mongo conf files
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: mongo.conf
+    dest: "{{ home_dir }}/mongo"
+    mode: '0755'
+
+- name: Update mongo conf
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/mongo/mongo.conf'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: Update mongo conf home dir
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/mongo/mongo.conf'
+    regexp: "{{ item }}"
+    replace: "{{ home_dir }}"
+  with_items:
+  - '#home#'
+
+- name: check Python3.9
+  become: yes
+  ansible.builtin.stat:
+    path: "/usr/bin/python3.9"
+  register: check_python
+
+- name: Install pymongo
+  become: yes
+  shell:
+    python3.9 -m pip install pymongo
+  when: check_python.stat.exists
+
+- name: Get running processes of mongo
+  shell: "ps -ef | grep -v grep | grep -w mongo | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+- name: Start mongo
+  become_user: "{{ autoid_user }}"
+  environment:
+          PATH: $PATH:/usr/local/bin
+  ansible.builtin.shell: mongod --dbpath "{{ home_dir }}"/mongo/mongodb --logpath "{{ home_dir }}"/mongo/mongod.log --fork
+
+
+- name: Create mongodb user mongoadmin
+  become_user: "{{ autoid_user }}"
+  community.mongodb.mongodb_user:
+    database: admin
+    name: mongoadmin
+    password: "{{ passwd }}"
+    roles: readWriteAnyDatabase,userAdmin
+    state: present
+
+- name: Create mongodb root
+  become_user: "{{ autoid_user }}"
+  community.mongodb.mongodb_user:
+    database: admin
+    name: root
+    password: "{{ passwd }}"
+    roles: root
+    state: present
+
+
+- name: Get running processes of mongo
+  shell: "ps -ef | grep -v grep | grep -w mongo | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+
+- name: copy showcase file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: showcase_data.zip
+    dest: "{{ home_dir }}"
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: check certs install for mongo
+  become: yes
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/mongo/certs/ca.pem"
+  register: check_mongo_cert
+
+- name: mongo old cert files remove
+  become: yes
+  shell: rm "{{ home_dir }}"/mongo/certs/*.*
+  when: check_mongo_cert.stat.exists
+
+- name: Install certs for mongo
+  include: mongo_certs.yml
+

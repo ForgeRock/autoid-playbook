@@ -1,0 +1,58 @@
+---
+
+- name: Copy Download cassandra
+  become: yes
+  copy:
+    src: 'apache-cassandra-4.0.7-bin.tar.gz'
+    dest: "{{ home_dir }}"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+
+- name: Extrat cassandra
+  become: yes
+  shell:
+    tar -xf "{{ home_dir }}"/apache-cassandra-4.0.7-bin.tar.gz -C "{{ home_dir }}"
+
+- name: check cassandra folder
+  become: yes
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/cassandra"
+  register: check_file
+
+- name: check cassandra downloads
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/apache-cassandra-4.0.7-bin.tar.gz"
+  register: check_file2
+  become: yes
+
+- name: setup cassandra
+  shell:
+    mv "{{ home_dir }}"/apache-cassandra-4.0.7 "{{ home_dir }}"/cassandra
+  when: not check_file.stat.exists
+  become: yes
+
+- name: Create cassandradb directory
+  shell: |
+    mkdir -p "{{ home_dir }}"/cassandra/config
+    mkdir -p "{{ home_dir }}"/cassandra/certs
+  become: yes
+
+- name: chown of cassandra
+  shell:
+    sudo chown -Rf "{{ autoid_user }}":"{{ autoid_group }}"  "{{ home_dir }}"/cassandra
+  become: yes
+
+- name: remove download of cassandra
+  shell:
+    rm "{{ home_dir }}"/cassandra*.tgz
+  when: check_file.stat.exists
+  become: yes
+
+- name: remove cassandra stage file
+  shell:
+    rm -rf "{{ home_dir }}"/apache-cassandra-4.0.7
+  when: check_file2.stat.exists
+  become: yes
+

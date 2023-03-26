@@ -1,0 +1,75 @@
+---
+
+- name: get myip
+  become_user: "{{ autoid_user }}"
+  shell: "echo $(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1)"
+  register: command_output
+
+- set_fact:
+    myip: "{{ command_output.stdout }}"
+
+- name: Get running processes of spark
+  shell: "ps -ef | grep -v grep | grep -w spark | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+- name: startup spark
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: ./spark/sbin/start-all.sh
+  args:
+    chdir: "{{ home_dir }}"
+
+- name: Get running processes of livy
+  shell: "ps -ef | grep -v grep | grep -w livy | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+- name: startup livy
+  become_user: "{{ autoid_user }}"
+  environment:
+    SPARK_HOME: "{{ home_dir }}/spark"
+  ansible.builtin.shell: ./livy/bin/livy-server start
+  args:
+    chdir: "{{ home_dir }}"
+
+- name: Get running processes of mongo
+  shell: "ps -ef | grep -v grep | grep -w mongo | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+- name: Start mongo
+  become_user: "{{ autoid_user }}"
+  environment:
+          PATH: $PATH:/usr/local/bin
+  ansible.builtin.shell: "mongod --config {{ home_dir }}/mongo/mongo.conf"
+  when: db_type == 'mongo'
+
+- name: Get running processes of opensearch
+  shell: "ps -ef | grep -v grep | grep -w opensearch | awk '{print $2}'"
+  register: running_processes
+
+- name: Kill running processes
+  shell: "kill {{ item }}"
+  with_items: "{{ running_processes.stdout_lines }}"
+
+- name: startup opensearch 
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: ./opensearch-tar-install.sh > opensearch.log 2>&1 &
+  args:
+    chdir: "{{ home_dir }}/opensearch"
+
+- name: startup opensearch dashboard
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: ./opensearch-dashboards --host "{{ myip }}" > opensearch-dashboards.log 2>&1 &
+  args:
+    chdir: "{{ home_dir }}/opensearch-dashboards/bin/"
+
