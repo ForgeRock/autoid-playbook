@@ -19,6 +19,6 @@ mongo: mongodb-linux-x86_64-rhel80-4.4.15
 opensearch: opensearch-1.3.6-linux-x64
 dashboard: opensearch-dashboards-1.3.6-linux-x64
 AutoID_version: 2022.11.2
-db_type: cassandra
-autoid_key_id: 950559411be422bb48e643b433559b5655e5f0f0hs
+db_type: mongo
+autoid_key_id: 
 autoid_key:
