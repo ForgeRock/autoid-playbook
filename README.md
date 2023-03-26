@@ -24,6 +24,7 @@ cd autoid-config
 
 NOTE:
 Before you run ansible-playbook, make sure the following steps are done which allow you to choose version of autoid, database type, user name etc
+If you choose use cassandra as your database type, you will need generate keystore manually first
 edit autoid_ansible/roles/autoid/vars/main.yml
 You can change user name who owns the application: autoid_user
 You can change the third party software location: home_dir
