@@ -1,0 +1,13 @@
+---
+
+- name: copy cassandra certs
+  shell: |
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-client-cer.pem "{{ install_dir }}"/certs/cassandra/zoran-cassandra-client-cer.pem
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-client-key.pem "{{ install_dir }}"/certs/cassandra/zoran-cassandra-client-key.pem
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-server-cer.pem "{{ install_dir }}"/certs/cassandra/zoran-cassandra-server-cer.pem
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-server-key.pem "{{ install_dir }}"/certs/cassandra/zoran-cassandra-server-key.pem
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-client-keystore.jks "{{ install_dir }}"/certs/cassandra/zoran-cassandra-client-keystore.jks
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-client-truststore.jks "{{ install_dir }}"/certs/cassandra/zoran-cassandra-client-truststore.jks
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-server-keystore.jks "{{ install_dir }}"/certs/cassandra/zoran-cassandra-server-keystore.jks
+    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra-server-truststore.jks "{{ install_dir }}"/certs/cassandra/zoran-cassandra-server-truststore.jks
+  when: db_type == 'cassandra'

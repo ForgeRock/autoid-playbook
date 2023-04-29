@@ -1,0 +1,106 @@
+---
+
+- name: get myip
+  become_user: "{{ autoid_user }}"
+  shell: "echo $(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1)"
+  register: command_output
+
+- set_fact:
+    myip: "{{ command_output.stdout }}"
+
+- name: copy cassandra repo
+  become: yes
+  copy:
+    src: cassandra.repo
+    dest: /etc/yum.repos.d/
+    mode: '0755'
+
+- name: check cassandra file
+  become: yes
+  ansible.builtin.stat:
+    path: /etc/cassandra/conf/cassandra.yaml
+  register: check_file
+
+- name: install cassandra
+  become: yes
+  shell: |
+    yum update -y
+    yum install cassandra -y
+  ignore_errors: true
+  when: not check_file.stat.exists
+
+- name: startup cassandra
+  become: yes
+  shell: |
+    systemctl enable cassandra.service
+    service cassandra start
+  ignore_errors: true
+
+- name: Install cqlsh
+  become: yes
+  shell:
+    pip install cqlsh
+
+- name: Create cassandra directory
+  file:
+    path: "{{ home_dir }}/cassandra"
+    state: directory
+    mode: 0775
+    recurse: yes
+  become: yes
+
+- name: Create cassandra certs directory
+  file:
+    path: "{{ home_dir }}/cassandra/certs"
+    state: directory
+    mode: 0775
+    recurse: yes
+  become: yes
+
+- name: copy cassandra_init.sh
+  become: yes
+  copy:
+    src: cassandra_init.sh
+    dest: "{{ home_dir }}/cassandra/"
+    mode: '0755'
+
+- name: Update cassandra_init.sh with ip
+  become: yes
+  replace:
+    path: '{{ home_dir }}/cassandra/cassandra_init.sh'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#myip#'
+
+- name: init cassandra
+  become: yes
+  shell:
+    ./cassandra_init.sh
+  args:
+    chdir: "{{ home_dir }}/cassandra"
+
+- name: copy cassandra_user_setup.sh
+  become: yes
+  copy:
+    src: cassandra_user_setup.sh
+    dest: "{{ home_dir }}/cassandra/"
+    mode: '0755'
+
+- name: Update cassandra_user_setup.sh with host ip
+  become: yes
+  replace:
+    path: '{{ home_dir }}/cassandra/cassandra_user_setup.sh'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: Update cassandra_user_setup.sh with passwd
+  become: yes
+  replace:
+    path: '{{ home_dir }}/cassandra/cassandra_user_setup.sh'
+    regexp: "{{ item }}"
+    replace: "{{ passwd }}"
+  with_items:
+  - '#pass#'

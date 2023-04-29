@@ -1,0 +1,14 @@
+---
+
+- name: check spark download
+  become: yes
+  ansible.builtin.stat:
+    path: "{{ home_dir + '/' + spark + '.tgz'}}"
+  register: check_spark
+
+- name: Download spark
+  become_user: "{{ autoid_user }}"
+  get_url:
+    url: "https://archive.apache.org/dist/spark/{{ spark_dir }}/{{ spark }}.tgz"
+    dest: '{{ home_dir }}'
+  when: not check_spark.stat.exists

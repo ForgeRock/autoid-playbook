@@ -46,6 +46,7 @@
     group: "{{ autoid_group }}"
     mode: '0775'
 
+
 - name: check cassandra cert file
   become: yes
   ansible.builtin.stat:
@@ -92,6 +93,7 @@
   with_items:
   - '#pass#'
 
+
 - name: Update cqlshrc with home dir
   become_user: "{{ autoid_user }}"
   replace:
@@ -100,6 +102,62 @@
     replace: "{{ home_dir }}"
   with_items:
   - '#home#'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-cer.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-key.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-cer.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-key.pem
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-keystore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-client-truststore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-keystore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
+
+- name: copy  cassandra cert files
+  become: yes
+  copy:
+    src: zoran-cassandra-server-truststore.jks
+    dest: '{{ home_dir }}/cassandra/certs'
+    mode: '0755'
 
 - name: make cassandra certs under /etc/cassandra
   become: yes

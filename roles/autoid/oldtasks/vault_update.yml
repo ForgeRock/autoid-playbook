@@ -1,0 +1,228 @@
+---
+
+- name: check cassandra
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(cassandra_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+
+- name: update cassandra
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# cassandra_password:'
+    line: '  cassandra_password: #pass#'
+    state: present
+
+- name: delete cassandra temp password
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# cassandra_password:'
+    state: absent
+
+- name: check cassandra admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(cassandra_admin_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+
+- name: update cassandra admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# cassandra_admin_password:'
+    line: '  cassandra_admin_password: #pass#'
+    state: present
+
+- name: delete temp cassandra admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# cassandra_admin_password:'
+    state: absent
+
+- name: check mongo admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(mongo_admin_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+
+- name: update mongo admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# mongo_admin_password:'
+    line: '  mongo_admin_password: #pass#'
+    state: present
+
+
+- name: delete temp  mongo admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# mongo_admin_password:'
+    state: absent
+
+- name: check mongo root
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(mongo_root_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+
+- name: update mongo root
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# mongo_root_password:'
+    line: '  mongo_root_password: #pass#'
+    state: present
+
+
+- name: delete temp mongo root
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# mongo_root_password:'
+    state: absent
+
+- name: check elastic admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(elastic_admin_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+
+- name: update elastic admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# elastic_admin_password:'
+    line: '  elastic_admin_password: #pass#'
+    state: present
+
+
+- name: delete temp elastic admin
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# elastic_admin_password:'
+    state: absent
+
+- name: check elasticsearch
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(elasticsearch_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+
+- name: update elasticsearch
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# elasticsearch_password:'
+    line: '  elasticsearch_password: #pass#'
+    state: present
+
+
+- name: delete temp elasticsearch
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# elasticsearch_password:'
+    state: absent
+
+
+- name: check keystore
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(keystore_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+
+- name: update keystore
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# keystore_password:'
+    line: '  keystore_password: #keypass#'
+    state: present
+
+
+- name: delete temp keystore
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# keystore_password:'
+    state: absent
+
+
+- name: check truststore
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '(truststore_password:)'
+    line: '# \1'
+    backrefs: yes
+    firstmatch: yes
+    state: present
+  
+- name: update truststore
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    insertafter: '# truststore_password:'
+    line: '  truststore_password: #keypass#'
+    state: present
+
+
+- name: delete temp truststore
+  become: yes
+  lineinfile:
+    path: "{{ install_dir }}/vault.yml"
+    regexp: '# truststore_password:'
+    state: absent
+
+
+
+- name: Update password in vault.yml
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ install_dir }}/vault.yml'
+    regexp: "{{ item }}"
+    replace: "{{ passwd }}"
+  with_items:
+  - '#pass#'
+
+- name: Update keypass in vault.yml
+  become_user: "{{ autoid_user }}"
+  shell: "{{ item }}"
+  with_items:
+    - "sed -i 's/keystore_password.*/keystore_password: {{ keypass }}/g' {{ install_dir }}/vault.yml"
+    - "sed -i 's/truststore_password.*/truststore_password: {{ keypass }}/g' {{ install_dir }}/vault.yml"
+

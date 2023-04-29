@@ -1,0 +1,22 @@
+_meta:
+  type: "internalusers"
+  config_version: 2
+
+elasticadmin:
+  hash: "#hash#"
+  reserved: true
+  backend_roles:
+  - "admin"
+  description: "Elastic admin user"
+
+kibanaro:
+  hash: "#hash#"
+  reserved: false
+  backend_roles:
+  - "kibanauser"
+  - "readall"
+
+kibanaserver:
+  hash: "#hash#"
+  reserved: true
+  description: "kibanaserver user"

@@ -1,0 +1,150 @@
+---
+
+- name: get myip
+  become_user: "{{ autoid_user }}"
+  shell: "echo $(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1)"
+  register: command_output
+
+- set_fact:
+    myip: "{{ command_output.stdout }}"
+
+- debug: var=myip
+ 
+- name: copy key_mongo file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_mongo.sh
+    dest: "{{ home_dir }}/mongo/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Update key_mongo.sh
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/mongo/certs/key_mongo.sh'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: Update key_mongo.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/mongo/certs/key_mongo.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: copy key_sign_mongo file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_sign_mongo.sh
+    dest: "{{ home_dir }}/mongo/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Update key_sign_mongo.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/mongo/certs/key_sign_mongo.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: copy mongoroot.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: mongoroot.conf
+    dest: "{{ home_dir }}/mongo/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: copy mongodb.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: mongodb.conf
+    dest: "{{ home_dir }}/mongo/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Update mongodb.conf
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/mongo/certs/mongodb.conf'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: Generate an private key for mongo ca
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/mongo/certs/ca.key"
+    force: yes
+    size: 2048
+
+- name: create root ca for mongo
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -x509 -sha256 -key ca.key -out ca.pem -config mongoroot.conf -days 3650"
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+
+- name: Generate an OpenSSL key for mongo csr
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/mongo/certs/mongodb.key"
+    force: yes
+    size: 2048
+
+- name: create  csr for mongodb
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -key mongodb.key -out mongodb.csr -config mongodb.conf"
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+
+- name: create  cert for mongodb
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl x509 -req -in mongodb.csr -CA ca.pem -CAkey ca.key -CAcreateserial -sha256 -out mongodb.crt -days 3650"
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+
+- name: create  mongodb.pem
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: cat mongodb.key mongodb.crt > mongodb.pem
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+
+- name: create rootCA.pem for mongo
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: cp ca.pem rootCA.pem
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+
+- name: Create mongo-client-keystore.jks
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/mongo/certs/key_mongo.sh"
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+    
+- name: Create signed mongo-client-keystore.jks
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/mongo/certs/key_sign_mongo.sh"
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+    
+- name: Import key for mongo
+  become_user: "{{ autoid_user }}"
+  shell: |
+    keytool -importcert -keystore mongo-client-keystore.jks -alias rootCa  -file ca.pem -noprompt  -keypass "{{ keypass }}" -storepass "{{ keypass }}"
+    keytool -importcert -keystore mongo-client-keystore.jks -alias mongonodekey -file mongonodekey.crt_signed -noprompt  -keypass "{{ keypass }}" -storepass "{{ keypass }}"
+    keytool -importcert -keystore mongo-server-truststore.jks -alias rootCa  -file ca.pem -noprompt -keypass "{{ keypass }}" -storepass "{{ keypass }}"
+  #ansible.builtin.shell: "{{ home_dir }}/mongo/certs/key_import_mongo_ca.sh"
+  args:
+    chdir: "{{ home_dir }}/mongo/certs"
+

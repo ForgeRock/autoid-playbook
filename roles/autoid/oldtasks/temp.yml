@@ -1,0 +1,12 @@
+---
+- name: update key value
+  ansible.builtin.lineinfile:
+    path: '{{ install_dir }}/autoid_registry_key.json'
+    insertbefore: '"client_email":'
+    line: '  "private_key": "-----BEGIN PRIVATE KEY-----\n{{ autoid_key }}\n-----END PRIVATE KEY-----\n",'
+
+- name: update key id value
+  ansible.builtin.lineinfile:
+    path: '{{ install_dir }}/autoid_registry_key.json'
+    insertafter: '"project_id":'
+    line: '  "project_id": "{{ autoid_key_id }}",'

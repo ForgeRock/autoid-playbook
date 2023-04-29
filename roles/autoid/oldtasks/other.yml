@@ -343,15 +343,6 @@
     sudo chown -Rf "{{ autoid_user }}":"{{ autoid_group }}"  "{{ home_dir }}"/opensearch
   become: yes
 
-- name: create cassandra cert dir
-  become: yes
-  shell:
-    mkdir -p "{{ home_dir }}"/cassandra/certs
-
-- name: chown of cassandra
-  shell:
-    sudo chown -Rf "{{ autoid_user }}":"{{ autoid_group }}"  "{{ home_dir }}"/cassandra
-  become: yes
 
 - name: chmod hash.sh
   become: yes

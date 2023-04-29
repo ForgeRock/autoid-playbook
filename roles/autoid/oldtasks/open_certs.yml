@@ -1,0 +1,209 @@
+---
+
+- name: get myip
+  become_user: "{{ autoid_user }}"
+  shell: "echo $(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1)"
+  register: command_output
+
+- set_fact:
+    myip: "{{ command_output.stdout }}"
+
+- debug: var=myip
+ 
+- name: copy key_open file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_open.sh
+    dest: "{{ home_dir }}/opensearch/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Update key_open.sh
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/opensearch/certs/key_open.sh'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: Update key_open.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/opensearch/certs/key_open.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: copy key_sign_open file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_sign_open.sh
+    dest: "{{ home_dir }}/opensearch/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+
+- name: Update key_sign_open.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/opensearch/certs/key_sign_open.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: Update key_sign_open.sh with ip
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/opensearch/certs/key_sign_open.sh'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: copy key_import_open.sh file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_import_open.sh
+    dest: "{{ home_dir }}/opensearch/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Update key_import_open.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/opensearch/certs/key_import_open.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: Update key_import_open.sh with myip
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/opensearch/certs/key_import_open.sh'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: copy openssl.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: openssl.conf
+    dest: "{{ home_dir }}/opensearch/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: copy admin.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: openssl-admin.conf
+    dest: "{{ home_dir }}/opensearch/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: copy openssl-node.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: openssl-node.conf
+    dest: "{{ home_dir }}/opensearch/certs"
+    mode: '0755'
+
+- name: Update openssl-node.conf
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/opensearch/certs/openssl-node.conf'
+    regexp: "{{ item }}"
+    replace: "{{ myip }}"
+  with_items:
+  - '#ip#'
+
+- name: Generate an OpenSSL private key for ca 
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/opensearch/certs/root-ca-key.pem"
+    force: yes
+    size: 2048
+
+- name: Generate an OpenSSL temp key for node
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/opensearch/certs/node-key-temp.pem"
+    force: yes
+    size: 2048
+
+- name: Generate an OpenSSL temp key for admin
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/opensearch/certs/admin-key-temp.pem"
+    force: yes
+    size: 2048
+
+- name: create root ca for opensearch
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -x509 -sha256 -key root-ca-key.pem -out root-ca.pem -config openssl.conf -days 3650"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: create admin key for opensearch
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl pkcs8 -inform PEM -outform PEM -in admin-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out admin-key.pem"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: create admin csr for opensearch
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -key admin-key.pem -out admin.csr -config openssl-admin.conf"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: create admin cert for opensearch
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl x509 -req -in admin.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out admin.pem -days 3650"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: create node key for opensearch
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl pkcs8 -inform PEM -outform PEM -in node-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out esnode-key.pem"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: create node csr for opensearch
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -key esnode-key.pem -out node.csr -config openssl-node.conf"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: create node cert for opensearch
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl x509 -req -in node.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out esnode.pem -days 3650"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: Create elastic-client-keystore.jks
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/opensearch/certs/key_open.sh"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: Create signed elstic-client-keystore.jks
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/opensearch/certs/key_sign_open.sh"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+
+- name: Import key for elastic
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/opensearch/certs/key_import_open.sh"
+  args:
+    chdir: "{{ home_dir }}/opensearch/certs"
+

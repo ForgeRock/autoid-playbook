@@ -1,0 +1,30 @@
+http.port: 9200
+discovery.seed_hosts: [#ip#, #ip#]
+cluster.initial_master_nodes: ["node-master"]
+network.host: #ip#
+path.logs: #home#/elastic/logs
+path.data: #home#/elastic/data
+node.name: node-master
+node.master: true
+cluster.name: elasticcluster
+
+plugins.security.ssl.transport.pemcert_filepath: esnode.pem
+plugins.security.ssl.transport.pemkey_filepath: esnode-key.pem
+plugins.security.ssl.transport.pemtrustedcas_filepath: root-ca.pem
+plugins.security.ssl.transport.enforce_hostname_verification: false
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.http.pemcert_filepath: esnode.pem
+plugins.security.ssl.http.pemkey_filepath: esnode-key.pem
+plugins.security.ssl.http.pemtrustedcas_filepath: root-ca.pem
+plugins.security.allow_unsafe_democertificates: true
+plugins.security.allow_default_init_securityindex: true
+plugins.security.authcz.admin_dn:
+ - CN=Admin,OU=ElasticCluster,O=YourCompany,C=US
+plugins.security.audit.type: internal_elasticsearch
+plugins.security.enable_snapshot_restore_privilege: true
+plugins.security.check_snapshot_restore_write_privileges: true
+plugins.security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
+cluster.routing.allocation.disk.threshold_enabled: false
+node.max_local_storage_nodes: 3
+plugins.security.nodes_dn: 
+ - CN=esnode,OU=ElasticCluster,O=YourCompany,C=US

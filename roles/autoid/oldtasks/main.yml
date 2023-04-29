@@ -321,7 +321,7 @@
   with_items:
   - '#home#'
 
-- name: Update dashboards.yml with ip
+- name: Update dashboards.yml
   become_user: "{{ autoid_user }}"
   replace:
     path: '{{ home_dir }}/opensearch-dashboards/config/opensearch_dashboards.yml'
@@ -330,32 +330,9 @@
   with_items:
   - '#ip#'
 
-- name: Update dashboards.yml with password
-  become_user: "{{ autoid_user }}"
-  replace:
-    path: '{{ home_dir }}/opensearch-dashboards/config/opensearch_dashboards.yml'
-    regexp: "{{ item }}"
-    replace: "{{ keypass }}"
-  with_items:
-  - '#pass#'
-
 - name: Setup mongo users
   include: mongo_setup.yml
   when: db_type == 'mongo'
-
-- name: check certs install for cassandra
-  become: yes
-  ansible.builtin.stat:
-    path: "{{ home_dir }}/cassandra/certs/root-ca.pem"
-  register: check_cass_cert
-
-- name: cassandra old cert files remove
-  become: yes
-  shell: rm "{{ home_dir }}"/cassandra/certs/*.*
-  when: check_cass_cert.stat.exists
-
-- name: Install certs for cassandra
-  include: cass_certs.yml
 
 - name: Setup cassandra
   include: cassandra_config.yml
@@ -436,8 +413,7 @@
 
 
 - name: copy cassandra certs
-  shell: |
-    cp "{{ home_dir }}"/cassandra/certs/zoran-cassandra* "{{ install_dir }}"/certs/cassandra/
+  include: cassandra_certs.yml
   when: db_type == 'cassandra'
 
 - name: chown of install dir certs

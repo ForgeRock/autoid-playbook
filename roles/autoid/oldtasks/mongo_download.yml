@@ -1,0 +1,61 @@
+---
+
+- name: Download mongo
+  become_user: "{{ autoid_user }}"
+  get_url:
+    url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-rhel80-4.4.15.tgz
+    dest: '{{ home_dir }}'
+
+- name: Extrat mongo
+  become: yes
+  ansible.builtin.unarchive:
+    src: "{{ home_dir }}/mongodb-linux-x86_64-rhel80-4.4.15.tgz"
+    dest: "{{ home_dir }}"
+    remote_src: yes
+
+- name: check mongo folder
+  become: yes
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/mongo"
+  register: check_file
+
+- name: check mongo downloads
+  ansible.builtin.stat:
+    path: "{{ home_dir }}/mongodb-linux-x86_64-rhel80-4.4.15"
+  register: check_file2
+  become: yes
+
+- name: setup mongo
+  shell:
+    mv "{{ home_dir }}"/mongodb-linux-x86_64-rhel80-4.4.15 "{{ home_dir }}"/mongo
+  when: not check_file.stat.exists
+  become: yes
+
+- name: Create mongodb directory
+  shell: |
+    mkdir -p "{{ home_dir }}"/mongo/mongodb
+    mkdir -p "{{ home_dir }}"/mongo/certs
+  become: yes
+
+- name: chown of mongo
+  shell:
+    sudo chown -Rf "{{ autoid_user }}":"{{ autoid_group }}"  "{{ home_dir }}"/mongo
+  become: yes
+
+- name: remove download of mongo
+  shell:
+    rm "{{ home_dir }}"/mongodb-linux*.tgz
+  when: check_file.stat.exists
+  become: yes
+
+- name: remove mongo stage file
+  shell:
+    rm -rf "{{ home_dir }}"/mongodb-linux-x86_64-rhel80-4.4.15
+  when: check_file2.stat.exists
+  become: yes
+
+- name: install mongod
+  become: yes
+  shell:
+    cp -rf "{{ home_dir }}"/mongo/bin/* /usr/local/bin/
+

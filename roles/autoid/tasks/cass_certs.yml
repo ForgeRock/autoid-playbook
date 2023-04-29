@@ -1,0 +1,173 @@
+---
+
+- name: get myip
+  become_user: "{{ autoid_user }}"
+  shell: "echo $(/sbin/ip -o -4 addr list eth0 | awk '{print $4}' | cut -d/ -f1)"
+  register: command_output
+
+- set_fact:
+    myip: "{{ command_output.stdout }}"
+
+- debug: var=myip
+ 
+- name: copy key_cass.sh file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_cass.sh
+    dest: "{{ home_dir }}/cassandra/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Update key_cass.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/cassandra/certs/key_cass.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: copy key_sign_cass.sh file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_sign_cass.sh
+    dest: "{{ home_dir }}/cassandra/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+
+- name: Update key_sign_cass.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/cassandra/certs/key_sign_cass.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: copy key_import_cass.sh file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: key_import_cass.sh
+    dest: "{{ home_dir }}/cassandra/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: Update key_import_cass.sh with keypass
+  become_user: "{{ autoid_user }}"
+  replace:
+    path: '{{ home_dir }}/cassandra/certs/key_import_cass.sh'
+    regexp: "{{ item }}"
+    replace: "{{ keypass }}"
+  with_items:
+  - '#pass#'
+
+- name: copy cassroot.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: cassroot.conf
+    dest: "{{ home_dir }}/cassandra/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: copy cass-node.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: cass-node.conf
+    dest: "{{ home_dir }}/cassandra/certs"
+    mode: '0755'
+    owner: "{{ autoid_user }}"
+    group: "{{ autoid_group }}"
+
+- name: copy cass-spark.conf file
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: cass-spark.conf
+    dest: "{{ home_dir }}/cassandra/certs"
+    mode: '0755'
+
+- name: Generate an OpenSSL private key for ca 
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/cassandra/certs/root-ca-key.pem"
+    force: yes
+    size: 2048
+
+- name: Generate an OpenSSL temp key for node
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/cassandra/certs/node-key-temp.pem"
+    force: yes
+    size: 2048
+
+- name: Generate an OpenSSL temp key for spark
+  become_user: "{{ autoid_user }}"
+  community.crypto.openssl_privatekey:
+    path: "{{ home_dir }}/cassandra/certs/spark-key-temp.pem"
+    force: yes
+    size: 2048
+
+- name: create root ca for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -x509 -sha256 -key root-ca-key.pem -out root-ca.pem -config cassroot.conf -days 3650"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: create spark key for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl pkcs8 -inform PEM -outform PEM -in spark-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out zoran-cassandra-client-key.pem"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: create spark csr for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -key  zoran-cassandra-client-key.pem -out sparknode.csr -config cass-spark.conf"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: create spark cert for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl x509 -req -in sparknode.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out zoran-cassandra-client-cer.pem -days 3650"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: create node key for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl pkcs8 -inform PEM -outform PEM -in node-key-temp.pem -topk8 -nocrypt -v1 PBE-SHA1-3DES -out zoran-cassandra-server-key.pem"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: create node csr for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl req -new -key zoran-cassandra-server-key.pem -out cassandranode.csr -config cass-node.conf"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: create node cert for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "openssl x509 -req -in cassandranode.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -sha256 -out zoran-cassandra-server-cer.pem -days 3650"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: Create zoran-cassandra-client-keystore.jks
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/cassandra/certs/key_cass.sh"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: Create signed zoran-cassandra-client-keystore.jks
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/cassandra/certs/key_sign_cass.sh"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
+- name: Import key for cassandra
+  become_user: "{{ autoid_user }}"
+  ansible.builtin.shell: "{{ home_dir }}/cassandra/certs/key_import_cass.sh"
+  args:
+    chdir: "{{ home_dir }}/cassandra/certs"
+
