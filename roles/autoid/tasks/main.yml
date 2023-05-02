@@ -335,7 +335,7 @@
   replace:
     path: '{{ home_dir }}/opensearch-dashboards/config/opensearch_dashboards.yml'
     regexp: "{{ item }}"
-    replace: "{{ keypass }}"
+    replace: "{{ passwd }}"
   with_items:
   - '#pass#'
 
