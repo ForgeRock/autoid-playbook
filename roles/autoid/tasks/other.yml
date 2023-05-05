@@ -34,11 +34,22 @@
   shell:
     echo "{{ autoid_user }}       - nofile 65535" | sudo tee -a /etc/security/limits.conf
 
+- name: get redhat
+  become_user: "{{ autoid_user }}"
+  shell: "cat /etc/redhat-release | awk '{print $1}'"
+  register: red_output
+  
+- set_fact:
+    myred: "{{ red_output.stdout }}"
+
+- debug: var=myred
+
 - name: Install epel-release 
   yum:
     name: epel-release
     state: latest
   become: yes
+  when: myred == 'Rocky'
 
 - name: Install update
   yum:

@@ -5,11 +5,22 @@
 - name: install docker
   include: ins_doc.yml
 
+- name: get redhat
+  become_user: "{{ autoid_user }}"
+  shell: "cat /etc/redhat-release | awk '{print $1}'"
+  register: red_output
+
+- set_fact:
+    myred: "{{ red_output.stdout }}"
+
+- debug: var=myred
+
 - name: Install community modules
   become: yes
   shell: |
     ansible-galaxy collection install community.mongodb
     ansible-galaxy collection install community.crypto
+  when: myred =='Rocky'
 
 - name: get myOS
   become_user: "{{ autoid_user }}"
@@ -26,7 +37,6 @@
   shell:
     yum install --enablerepo=powertools elinks -y
   when: myos == '8.7'
-
 
 - name: check home dir
   become: yes
