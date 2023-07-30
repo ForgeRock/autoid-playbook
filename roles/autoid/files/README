@@ -17,7 +17,7 @@ curl -X POST --data '{"kind": "pyspark"}' -H "Content-Type: application/json" #i
 // Check if you get a response
 curl #ip#:8998/sessions/0/statements -X POST -H 'Content-Type: application/json' -d '{"code":"1 + 2"}' 
 // check if you get a response
-curl #ip#:8998/sessions/0/statements/0 | python3.8 -m json.tool 
+curl #ip#:8998/sessions/0/statements/0 | python3 -m json.tool 
 //check if output.date return value 3. livy successfully connected to spark 
 CHECK cassandra
 

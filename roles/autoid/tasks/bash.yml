@@ -19,7 +19,7 @@
 - name: update bashrc pyspark home
   lineinfile:
     path: "{{ usr_dir }}/.bashrc"
-    line: 'export PYSPARK_PYTHON=/usr/local/bin/python3.8'
+    line: 'export PYSPARK_PYTHON=/usr/local/bin/python3.10'
     state: present
   become: yes
 

@@ -1,0 +1,17 @@
+six==1.11
+certifi==2019.11.28
+python-dateutil==2.8.1
+jsonschema==3.2.0
+cassandra-driver
+numpy==1.22.0
+pyarrow==6.0.1
+wrapt==1.11.0
+PyYAML==6.0
+requests==2.31.0
+urllib3==1.26.5
+pymongo
+pandas==1.3.5
+tabulate
+openpyxl
+wheel
+cython

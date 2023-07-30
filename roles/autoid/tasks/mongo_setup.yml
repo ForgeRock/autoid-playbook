@@ -25,6 +25,13 @@
   with_items:
   - '#home#'
 
+- name: install python3.8
+  yum:
+    name: python3.9
+    state: present
+    update_cache: true
+  become: true
+
 - name: check Python3.9
   become: yes
   ansible.builtin.stat:
@@ -51,25 +58,9 @@
           PATH: $PATH:/usr/local/bin
   ansible.builtin.shell: mongod --dbpath "{{ home_dir }}"/mongo/mongodb --logpath "{{ home_dir }}"/mongo/mongod.log --fork
 
-
-- name: Create mongodb user mongoadmin
+- name: run monog_user.sh
   become_user: "{{ autoid_user }}"
-  community.mongodb.mongodb_user:
-    database: admin
-    name: mongoadmin
-    password: "{{ passwd }}"
-    roles: readWriteAnyDatabase,userAdmin
-    state: present
-
-- name: Create mongodb root
-  become_user: "{{ autoid_user }}"
-  community.mongodb.mongodb_user:
-    database: admin
-    name: root
-    password: "{{ passwd }}"
-    roles: root
-    state: present
-
+  shell: "{{ install_dir }}/mongo_user.sh "
 
 - name: Get running processes of mongo
   shell: "ps -ef | grep -v grep | grep -w mongo | awk '{print $2}'"

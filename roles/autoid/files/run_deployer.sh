@@ -5,7 +5,7 @@ sudo chmod 777 /opt/autoid/license/open-source-attributions.pdf
 # make sure to comment out 127.x in /etc/hosts
 cd /opt/autoid/eggs
 wheel convert  autoid_analytics-2021.3-py3.6.egg
-pip3.8 install autoid_analytics-2021.3-py36-none-any.whl
+pip3 install autoid_analytics-2021.3-py36-none-any.whl
 #stop spark, livy
 cd #home
 ./spark/sbin/stop-all.sh

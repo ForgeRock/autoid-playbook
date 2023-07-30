@@ -117,99 +117,14 @@
     state: latest
   become: yes
 
-- name: check Python3.8 install
-  become: yes
-  ansible.builtin.stat:
-    path: "/usr/local/bin/python3.8"
-  register: check_python
-
-- name: Download python3.8
-  become_user: "{{ autoid_user }}"
-  get_url:
-    url: https://www.python.org/ftp/python/3.8.14/Python-3.8.14.tgz
-    dest: '{{ home_dir }}'
-  when: not check_python.stat.exists
-
-- name: Extract python3.8
-  become: yes
-  ansible.builtin.unarchive:
-    src: "{{ home_dir }}/Python-3.8.14.tgz"
-    dest: "{{ home_dir }}"
-    remote_src: yes
-  when: not check_python.stat.exists
-
-- name: chown of Python
-  shell:
-    sudo chown -Rf "{{ autoid_user }}":"{{ autoid_group }}"  "{{ home_dir }}"/Python-3.8.14
-  become: yes
-  when: not check_python.stat.exists
- 
-- name: config Python for make
-  become_user: "{{ autoid_user }}"
-  ansible.builtin.shell: "{{ home_dir }}/Python-3.8.14/configure --enable-optimizations"
-  args:
-    chdir: "{{ home_dir }}/Python-3.8.14"
-  when: not check_python.stat.exists
+- name: Install Python
+  include: python38.yml
+  when: 'not "2022.11.5" in AutoID_version' 
   
-- name: make python
-  become: yes
-  ansible.builtin.shell: sudo make altinstall
-  args: 
-    chdir: "{{ home_dir }}/Python-3.8.14"
-  when: not check_python.stat.exists
-  
-- name: check old python3
-  become: yes
-  ansible.builtin.stat:
-    path: /usr/bin/python3
-  register: check_python3
+- name: Install Python
+  include: python310.yml
+  when: '"2022.11.5" in AutoID_version'
 
-- name: remove old python
-  shell:
-    rm -rf /usr/bin/python3
-  become: yes
-  when: check_python3.stat.exists
-
-- name: python soft link
-  shell:
-    ln -s /usr/local/bin/python3.8 /usr/bin/python3
-  become: yes
-
-- name: update bashrc
-  lineinfile:
-    path: "{{ usr_dir }}/.bashrc"
-    line: 'export PYSPARK_PYTHON=/usr/local/bin/python3.8'
-    state: present
-  become: yes
-
-- name: source env
-  become_user: "{{ autoid_user }}"
-  shell:
-    source "{{ usr_dir }}"/.bashrc
-
-- name: check pip link
-  become: yes
-  ansible.builtin.stat:
-    path: "/usr/bin/pip"
-  register: check_pip
-
-- name: pip soft link
-  shell:
-    sudo ln -s /usr/local/bin/pip3.8 /usr/bin/pip
-  become: yes
-  when: not check_pip.stat.exists
-
-- name: check python download
-  become: yes
-  ansible.builtin.stat:
-    path: "{{ home_dir }}/Python-3.8.14.tgz"
-  register: check_file
-
-- name: delete python dowload
-  shell:
-    rm "{{ home_dir }}"/Python-3.8.14.tgz
-  when: check_file.stat.exists
-  become: yes
 
 - name: Install python setuptools
   become_user: "{{ autoid_user }}"
@@ -219,9 +134,19 @@
 - name: Install python requirements
   become_user: "{{ autoid_user }}"
   shell:
-    python3 -m pip install -r requirements.txt
+    sudo python3 -m pip install -r requirements.txt
   args:
     chdir: "{{ home_dir }}"
+  when: 'not "2022.11.5" in AutoID_version'
+
+  
+- name: Install python requirements
+  become_user: "{{ autoid_user }}"
+  shell:
+    sudo python3 -m pip install -r requirements_new.txt
+  args:
+    chdir: "{{ home_dir }}"
+  when: '"2022.11.5" in AutoID_version'
 
 - name: check spark download
   become: yes
@@ -265,7 +190,7 @@
 - name: setup spark log4j
   shell:
     cp "{{ home_dir }}"/spark/conf/log4j2.properties.template "{{ home_dir }}"/spark/conf/log4j2.properties
-  when: check_file.stat.exists
+  when: check_spark_folder.stat.exists
   become: yes
 
 - name: chown of spark

@@ -2,6 +2,14 @@
 - name: create autoid user and installation dir/key
   include: user.yml
 
+- name: install python3.8
+  yum:
+    name: python3.8
+    state: present
+    update_cache: true
+  become: true
+
+
 - name: install docker
   include: ins_doc.yml
 
@@ -58,6 +66,22 @@
     dest: "{{ install_dir }}"
     mode: '0755'
 
+- name: copy mongo_user.sh files
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: mongo_user.sh
+    dest: "{{ install_dir }}"
+    mode: '0755'
+
+- name: Update mongo_user with password
+  become: yes
+  replace:
+    path: '{{ install_dir }}/mongo_user.sh'
+    regexp: "{{ item }}"
+    replace: "{{ passwd }}"
+  with_items:
+  - 'password'
+
 - name: copy run files
   become_user: "{{ autoid_user }}"
   copy:
@@ -83,6 +107,13 @@
   become_user: "{{ autoid_user }}"
   copy:
     src: requirements.txt
+    dest: "{{ home_dir }}"
+    mode: '0755'
+
+- name: copy requirment_new files
+  become_user: "{{ autoid_user }}"
+  copy:
+    src: requirements_new.txt
     dest: "{{ home_dir }}"
     mode: '0755'
 
