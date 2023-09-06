@@ -119,11 +119,11 @@
 
 - name: Install Python
   include: python38.yml
-  when: 'not "2022.11.5" in AutoID_version' 
+  when: AutoID_version == '2022.11.1' or AutoID_version == '2022.11.2' or AutoID_version == '2022.11.3' or AutoID_version == '2022.11.4'
   
 - name: Install Python
   include: python310.yml
-  when: '"2022.11.5" in AutoID_version'
+  when: AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
 
 
 - name: Install python setuptools
@@ -137,7 +137,7 @@
     sudo python3 -m pip install -r requirements.txt
   args:
     chdir: "{{ home_dir }}"
-  when: 'not "2022.11.5" in AutoID_version'
+  when: AutoID_version == '2022.11.1' or AutoID_version == '2022.11.2' or AutoID_version == '2022.11.3' or AutoID_version == '2022.11.4' 
 
   
 - name: Install python requirements
@@ -146,7 +146,7 @@
     sudo python3 -m pip install -r requirements_new.txt
   args:
     chdir: "{{ home_dir }}"
-  when: '"2022.11.5" in AutoID_version'
+  when: AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
 
 - name: check spark download
   become: yes
