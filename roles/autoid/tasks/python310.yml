@@ -52,8 +52,7 @@
   shell:
     rm -rf /usr/bin/python3
   become: yes
-  when: check_python3.stat.exists
-
+  
 - name: python soft link
   shell:
     ln -s /usr/local/bin/python3.10 /usr/bin/python3
