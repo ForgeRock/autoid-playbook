@@ -16,13 +16,6 @@
   with_items:
   - '#home'
 
-- name: update bashrc pyspark home
-  lineinfile:
-    path: "{{ usr_dir }}/.bashrc"
-    line: 'export PYSPARK_PYTHON=/usr/local/bin/python3.10'
-    state: present
-  become: yes
-
 - name: update bashrc java home
   lineinfile:
     path: "{{ usr_dir }}/.bashrc"
