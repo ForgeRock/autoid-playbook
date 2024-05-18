@@ -117,14 +117,17 @@
     state: latest
   become: yes
 
-- name: Install Python
+- name: Install Python for 2022.11.1 ~ 4
   include: python38.yml
   when: AutoID_version == '2022.11.1' or AutoID_version == '2022.11.2' or AutoID_version == '2022.11.3' or AutoID_version == '2022.11.4'
   
-- name: Install Python
+- name: Install Python for 2022.11.5 ~ 8
+  include: python310.yml
+  when: AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6' or AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+
+- name: Install Python for 2022.11.9 ~ 10
   include: python310.yml
   when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10'
-
 
 - name: Install python setuptools
   become_user: "{{ autoid_user }}"
