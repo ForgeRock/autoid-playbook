@@ -22,9 +22,9 @@
     value: 0
   become: yes
 
-- name: Install Docker
+- name: Install Docker 24.0.9
   package:
-    name: docker-ce
+    name: docker-ce-3:24.0.9-1.el8
     state: latest
   become: yes
 
