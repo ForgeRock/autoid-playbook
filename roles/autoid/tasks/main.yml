@@ -1,6 +1,6 @@
 ---
 - name: create autoid user and installation dir/key
-  include: user.yml
+  import_tasks: user.yml
 
 - name: install python3.8
   yum:
@@ -11,7 +11,7 @@
 
 
 - name: install docker
-  include: ins_doc.yml
+  import_tasks: ins_doc.yml
 
 - name: get redhat
   become_user: "{{ autoid_user }}"
@@ -125,7 +125,7 @@
     mode: '0755'
     
 - name: get autoid key
-  include: temp.yml
+  import_tasks: temp.yml
 
 - name: run download script
   become_user: "{{ autoid_user }}"
@@ -200,7 +200,7 @@
     line: "  username: zoran_dba"
 
 - name: Update vault.yml
-  include: vault_update.yml
+  import_tasks: vault_update.yml
 
 - name: Update run_deployer.sh with apps dir
   become_user: "{{ autoid_user }}"
@@ -271,7 +271,7 @@
   when: not check_docker.stat.exists
 
 - name: install third party dependencies
-  include: other.yml
+  import_tasks: other.yml
  
 - name: copy livy conf files
   become_user: "{{ autoid_user }}"
@@ -381,7 +381,7 @@
   - '#pass#'
 
 - name: Setup mongo users
-  include: mongo_setup.yml
+  import_tasks: mongo_setup.yml
   when: db_type == 'mongo'
 
 - name: check certs install for cassandra
@@ -396,10 +396,10 @@
   when: check_cass_cert.stat.exists
 
 - name: Install certs for cassandra
-  include: cass_certs.yml
+  import_tasks: cass_certs.yml
 
 - name: Setup cassandra
-  include: cassandra_config.yml
+  import_tasks: cassandra_config.yml
   when: db_type == 'cassandra'
 
 - name: check certs install for opensearch
@@ -414,7 +414,7 @@
   when: check_open_cert.stat.exists
 
 - name: Install certs for opensearch
-  include: open_certs.yml
+  import_tasks: open_certs.yml
 
 - name: edit security limits.conf
   become: yes
@@ -498,4 +498,4 @@
   become: yes
 
 - name: start all services
-  include: start.yml
+  import_tasks: start.yml
