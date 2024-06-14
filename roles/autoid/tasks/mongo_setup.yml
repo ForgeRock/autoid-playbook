@@ -25,7 +25,7 @@
   with_items:
   - '#home#'
 
-- name: install python3.8
+- name: install python3.9
   yum:
     name: python3.9
     state: present
