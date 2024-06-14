@@ -489,5 +489,11 @@
     sudo chmod -Rf 777 /opt/autoid/license
   become: yes
 
+- name: fix python3 issue
+  shell:
+    sudo rm /usr/bin/python3
+    sudo ln -s /usr/local/bin/python3.10 /usr/bin/python3
+  become: yes
+  
 - name: start all services
   import_tasks: start.yml
