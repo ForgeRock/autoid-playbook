@@ -91,5 +91,5 @@
   when: check_mongo_cert.stat.exists
 
 - name: Install certs for mongo
-  include: mongo_certs.yml
+  import_tasks: mongo_certs.yml
 
