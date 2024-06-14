@@ -118,15 +118,15 @@
   become: yes
 
 - name: Install Python for 2022.11.1 ~ 4
-  include: python38.yml
+  import_tasks: python38.yml
   when: AutoID_version == '2022.11.1' or AutoID_version == '2022.11.2' or AutoID_version == '2022.11.3' or AutoID_version == '2022.11.4'
   
 - name: Install Python for 2022.11.5 ~ 8
-  include: python310.yml
+  import_tasks: python310.yml
   when: AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6' or AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
 
 - name: Install Python for 2022.11.9 ~ 10
-  include: python310.yml
+  import_tasks: python310.yml
   when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10'
 
 - name: Install python setuptools
@@ -241,12 +241,12 @@
   become: yes
 
 - name: Mongo Install
-  include: mongo_download.yml
+  import_tasks: mongo_download.yml
   when: db_type == 'mongo'
 
 
 - name: Cassandra Install
-  include: cassandra_download.yml
+  import_tasks: cassandra_download.yml
   when: db_type == 'cassandra'
 
 - name: Download opensearch
@@ -381,5 +381,5 @@
   become: yes
   
 - name: update all env
-  include: bash.yml
+  import_tasks: bash.yml
 
