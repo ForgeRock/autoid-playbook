@@ -2,14 +2,6 @@
 - name: create autoid user and installation dir/key
   import_tasks: user.yml
 
-- name: install python3.8
-  yum:
-    name: python3.8
-    state: present
-    update_cache: true
-  become: true
-
-
 - name: install docker
   import_tasks: ins_doc.yml
 
