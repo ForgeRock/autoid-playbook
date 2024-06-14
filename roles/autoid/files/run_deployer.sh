@@ -1,3 +1,6 @@
+# fix python3 issues
+sudo rm /usr/bin/python3
+sudo ln -s /usr/local/bin/python3.10 /usr/bin/python3
 #cass/cassandra/cassandra_user_setup.sh
 ./deployer.sh run
 sudo chmod 777 /opt/autoid/license/open-source-attributions.pdf
