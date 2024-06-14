@@ -149,6 +149,14 @@
     sudo python3 -m pip install -r requirements_new.txt
   args:
     chdir: "{{ home_dir }}"
+  when: AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6' or AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+  
+- name: Install python requirements
+  become_user: "{{ autoid_user }}"
+  shell:
+    sudo python3 -m pip install -r requirements_new.txt
+  args:
+    chdir: "{{ home_dir }}"
   when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10'
 
 - name: check spark download
