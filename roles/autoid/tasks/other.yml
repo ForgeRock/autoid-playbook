@@ -125,9 +125,9 @@
   import_tasks: python310.yml
   when: AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6' or AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
 
-- name: Install Python for 2022.11.9 and 10
+- name: Install Python for 2022.11.9 and higher
   import_tasks: python310.yml
-  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10'
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
 
 - name: Install python setuptools
   become_user: "{{ autoid_user }}"
@@ -157,7 +157,7 @@
     sudo python3 -m pip install -r requirements_new.txt
   args:
     chdir: "{{ home_dir }}"
-  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10'
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
 
 - name: check spark download
   become: yes
@@ -257,16 +257,49 @@
   import_tasks: cassandra_download.yml
   when: db_type == 'cassandra'
 
-- name: Download opensearch
+- name: Download opensearch for older autoid
   become_user: "{{ autoid_user }}"
   get_url:
     url: https://artifacts.opensearch.org/releases/bundle/opensearch/1.3.6/opensearch-1.3.6-linux-x64.tar.gz
     dest: '{{ home_dir }}'
+  when: AutoID_version == '2022.11.4' or AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
 
-- name: Extrat openserch
+
+- name: Download opensearch for autoid 7 and 8
+  become_user: "{{ autoid_user }}"
+  get_url:
+    url: https://artifacts.opensearch.org/releases/bundle/opensearch/1.3.13/opensearch-1.3.13-linux-x64.tar.gz
+    dest: '{{ home_dir }}'
+  when: AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+
+
+- name: Download opensearch for new autoid
+  become_user: "{{ autoid_user }}"
+  get_url:
+    url: https://artifacts.opensearch.org/releases/bundle/opensearch/1.3.14/opensearch-1.3.14-linux-x64.tar.gz
+    dest: '{{ home_dir }}'
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
+
+
+- name: Extrat openserch for older autoid
   become: yes
   shell:
     tar -xf "{{ home_dir }}"/opensearch-1.3.6-linux-x64.tar.gz -C "{{ home_dir }}"
+  when: AutoID_version == '2022.11.4' or AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
+
+
+- name: Extrat openserch for autoid 7 and 8
+  become: yes
+  shell:
+    tar -xf "{{ home_dir }}"/opensearch-1.3.13-linux-x64.tar.gz -C "{{ home_dir }}"
+  when: AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+
+- name: Extrat openserch for new autoid
+  become: yes
+  shell:
+    tar -xf "{{ home_dir }}"/opensearch-1.3.14-linux-x64.tar.gz -C "{{ home_dir }}"
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
+
 
 - name: check opensearch folder
   become: yes
@@ -274,12 +307,24 @@
     path: "{{ home_dir }}/opensearch"
   register: check_file
 
-- name: setup opensearch
+- name: setup opensearch for old autoid
   shell:
     mv "{{ home_dir }}"/opensearch-1.3.6 "{{ home_dir }}"/opensearch
-  when: not check_file.stat.exists
   become: yes
+  when: AutoID_version == '2022.11.4' or AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
 
+- name: setup opensearch for autoid 7 and 8
+  shell:
+    mv "{{ home_dir }}"/opensearch-1.3.13 "{{ home_dir }}"/opensearch
+  become: yes
+  when: AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+
+- name: setup opensearch for new autoid
+  shell:
+    mv "{{ home_dir }}"/opensearch-1.3.14 "{{ home_dir }}"/opensearch
+  become: yes
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
+  
 - name: create opensearch cert dir
   become: yes
   shell:
@@ -345,24 +390,48 @@
   with_items:
   - '#hash#'
 
-
-- name: remove download of opensearch
-  shell: |
-    rm "{{ home_dir }}"/opensearch-1.3.6-linux-x64.tar.gz
-    rm -rf "{{ home_dir }}"/opensearch-1.3.6
-  when: check_file.stat.exists
-  become: yes
-  
-- name: Download opensearch_dashboard
+- name: Download opensearch_dashboard for old autoid
   become_user: "{{ autoid_user }}"
   get_url:
     url: https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/1.3.6/opensearch-dashboards-1.3.6-linux-x64.tar.gz
     dest: '{{ home_dir }}'
+  when: AutoID_version == '2022.11.4' or AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
 
-- name: Extrat openserch dashboard
+
+- name: Download opensearch_dashboard for autoid 7 and 8
+  become_user: "{{ autoid_user }}"
+  get_url:
+    url: https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/1.3.13/opensearch-dashboards-1.3.13-linux-x64.tar.gz
+    dest: '{{ home_dir }}'
+  when: AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+
+
+- name: Download opensearch_dashboard for new autoid
+  become_user: "{{ autoid_user }}"
+  get_url:
+    url: https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/1.3.14/opensearch-dashboards-1.3.14-linux-x64.tar.gz
+    dest: '{{ home_dir }}'
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
+
+
+- name: Extrat openserch dashboard for old autoid
   become: yes
   shell:
     tar -xf "{{ home_dir }}"/opensearch-dashboards-1.3.6-linux-x64.tar.gz -C "{{ home_dir }}"
+  when: AutoID_version == '2022.11.4' or AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
+
+
+- name: Extrat openserch dashboard for autoid 7 and 8
+  become: yes
+  shell:
+    tar -xf "{{ home_dir }}"/opensearch-dashboards-1.3.13-linux-x64.tar.gz -C "{{ home_dir }}"
+  when: AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+
+- name: Extrat openserch dashboard for new autoid
+  become: yes
+  shell:
+    tar -xf "{{ home_dir }}"/opensearch-dashboards-1.3.14-linux-x64.tar.gz -C "{{ home_dir }}"
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
 
 - name: check dashboard folder
   become: yes
@@ -370,24 +439,29 @@
     path: "{{ home_dir }}/opensearch-dashboards"
   register: check_file
 
-- name: setup open dashboard
+- name: setup open dashboard for old autoid
   shell:
     mv "{{ home_dir }}"/opensearch-dashboards-1.3.6 "{{ home_dir }}"/opensearch-dashboards/
-  when: not check_file.stat.exists
   become: yes
+  when: AutoID_version == '2022.11.4' or AutoID_version == '2022.11.5' or AutoID_version == '2022.11.6'
 
+- name: setup open dashboard for autoid 7 and 8
+  shell:
+    mv "{{ home_dir }}"/opensearch-dashboards-1.3.13 "{{ home_dir }}"/opensearch-dashboards/
+  become: yes
+  when: AutoID_version == '2022.11.7' or AutoID_version == '2022.11.8'
+
+- name: setup open dashboard for new autoid
+  shell:
+    mv "{{ home_dir }}"/opensearch-dashboards-1.3.14 "{{ home_dir }}"/opensearch-dashboards/
+  become: yes
+  when: AutoID_version == '2022.11.9' or AutoID_version == '2022.11.10' or AutoID_version == '2022.11.11'
+  
 - name: chown of dashboard
   shell:
     sudo chown -Rf "{{ autoid_user }}":"{{ autoid_group }}"  "{{ home_dir }}"/opensearch-dashboards
   become: yes
 
-- name: remove download of opensearch dashboard
-  shell: |
-    rm "{{ home_dir }}"/opensearch-dashboards-*.gz
-    rm -rf "{{ home_dir }}"/opensearch-dashboards-1.3.6
-  when: check_file.stat.exists
-  become: yes
-  
 - name: update all env
   import_tasks: bash.yml
 
